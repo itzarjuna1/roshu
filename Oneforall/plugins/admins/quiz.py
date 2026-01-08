@@ -10,8 +10,8 @@ from Oneforall import app
 from Oneforall.utils.database.database import db
 
 # ⚙️ CONFIG
-Chatsdb = mongodb.chats
-STATS_COLL = db.quiz_stats
+CHATS_COLL = mongodb.chats
+STATS_COLL = mongodb.quiz_stats
 LOGGER_ID = -1003634796457  # ← PUT YOUR LOG CHANNEL/GROUP ID HERE
 
 last_command_time = {}
