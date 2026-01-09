@@ -1,4 +1,4 @@
-from TEAMZYRO import ZYRO as app
+from Oneforall import HOTTY as app
 from pyrogram import filters
 import asyncio
 import random
