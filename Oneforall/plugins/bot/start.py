@@ -29,9 +29,6 @@ from Oneforall.misc import SUDOERS
 async def start_pm(client, message: Message, _):
     await add_served_user(message.from_user.id)
     await message.react("❤")
-    loading = await message.reply_text("<b>ʟᴏᴀᴅɪɴɢ...</b>")
-    await asyncio.sleep(0.5)
-    await loading.delete
     if len(message.text.split()) > 1:
         name = message.text.split(None, 1)[1]
         if name[0:3] == "del":
