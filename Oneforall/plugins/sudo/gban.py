@@ -20,6 +20,10 @@ from Oneforall.utils.decorators.language import language
 from Oneforall.utils.extraction import extract_user
 
 
+# 🔹 CATBOX GBAN VIDEO
+GBAN_VIDEO = "https://files.catbox.moe/yourvideo.mp4"
+
+
 @app.on_message(filters.command(["gban", "globalban"]) & SUDOERS)
 @language
 async def global_ban(client, message: Message, _):
@@ -36,8 +40,7 @@ async def global_ban(client, message: Message, _):
     elif user.id in SUDOERS:
         return await message.reply_text(_["gban_3"])
 
-    is_gbanned = await is_banned_user(user.id)
-    if is_gbanned:
+    if await is_banned_user(user.id):
         return await message.reply_text(
             _["gban_warning"].format(user.mention)
         )
@@ -67,6 +70,24 @@ async def global_ban(client, message: Message, _):
 
     await add_banned_user(user.id)
 
+    # 🎥 SEND CATBOX VIDEO ON GBAN
+    try:
+        await message.reply_video(
+            video=GBAN_VIDEO,
+            caption=_["gban_6"].format(
+                app.mention,
+                message.chat.title,
+                message.chat.id,
+                user.mention,
+                user.id,
+                message.from_user.mention,
+                number_of_chats,
+            ),
+            supports_streaming=True
+        )
+    except:
+        pass
+
     # ✅ GBAN LOG
     try:
         await app.send_message(
@@ -80,18 +101,6 @@ async def global_ban(client, message: Message, _):
         )
     except:
         pass
-
-    await message.reply_text(
-        _["gban_6"].format(
-            app.mention,
-            message.chat.title,
-            message.chat.id,
-            user.mention,
-            user.id,
-            message.from_user.mention,
-            number_of_chats,
-        )
-    )
 
     await mystic.delete()
 
