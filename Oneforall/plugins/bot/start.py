@@ -1,11 +1,9 @@
 import asyncio
-import random
 import time
 
 from pyrogram import filters
 from pyrogram.enums import ChatType
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
-
 from youtubesearchpython.__future__ import VideosSearch
 
 import config
@@ -25,14 +23,6 @@ from Oneforall.utils.decorators.language import LanguageStart
 from Oneforall.utils.formatters import get_readable_time
 from Oneforall.utils.inline import help_pannel, private_panel, start_panel
 from strings import get_string
-
-
-EFFECT_ID = [
-    5046509860389126442,
-    5107584321108051014,
-    5104841245755180586,
-    5159385139981059251,
-]
 
 
 # =========================
@@ -56,7 +46,6 @@ async def start_pm(client, message: Message, _):
                 photo=config.START_IMG_URL,
                 caption=_["help_1"].format(config.SUPPORT_CHAT),
                 reply_markup=help_pannel(_),
-                has_spoiler=True,
             )
 
         # SUDO LIST
@@ -102,7 +91,6 @@ async def start_pm(client, message: Message, _):
                         ]
                     ]
                 ),
-                has_spoiler=True,
             )
             return
 
@@ -111,9 +99,15 @@ async def start_pm(client, message: Message, _):
         photo=config.START_IMG_URL,
         caption=_["start_2"].format(message.from_user.mention, app.mention),
         reply_markup=InlineKeyboardMarkup(private_panel(_)),
-        message_effect_id=random.choice(EFFECT_ID),
-        has_spoiler=True,
     )
+
+    if await is_on_off(2):
+        await app.send_message(
+            config.LOGGER_ID,
+            f"{message.from_user.mention} started the bot\n\n"
+            f"<b>ID:</b> <code>{message.from_user.id}</code>\n"
+            f"<b>Username:</b> @{message.from_user.username}",
+        )
 
 
 # =========================
@@ -127,7 +121,6 @@ async def start_gp(client, message: Message, _):
         photo=config.START_IMG_URL,
         caption=_["start_1"].format(app.mention, get_readable_time(uptime)),
         reply_markup=InlineKeyboardMarkup(start_panel(_)),
-        has_spoiler=True,
     )
     await add_served_chat(message.chat.id)
 
@@ -142,8 +135,12 @@ async def welcome_handler(client, message: Message):
             language = await get_lang(message.chat.id)
             _ = get_string(language)
 
+            # BAN CHECK
             if await is_banned_user(member.id):
-                await message.chat.ban_member(member.id)
+                try:
+                    await message.chat.ban_member(member.id)
+                except:
+                    pass
                 return
 
             # BOT JOINED
@@ -172,7 +169,6 @@ async def welcome_handler(client, message: Message):
                         app.mention,
                     ),
                     reply_markup=InlineKeyboardMarkup(start_panel(_)),
-                    has_spoiler=True,
                 )
                 await add_served_chat(message.chat.id)
                 await message.stop_propagation()
@@ -181,16 +177,18 @@ async def welcome_handler(client, message: Message):
             # OWNER WELCOME
             if member.id == config.OWNER_ID:
                 msg = await message.reply_text(
-                    f"👑 <b>BOT OWNER JOINED</b>\n\n{member.mention}",
-                    reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton(member.first_name, user_id=member.id)]]
-                    ),
+                    f"👑 <b>BOT OWNER JOINED</b>\n\n{member.mention}"
                 )
                 await asyncio.sleep(20)
                 await msg.delete()
 
             # SUDO WELCOME
-            if member.id in SUDOERS if isinstance(SUDOERS, (list, set)) else member.id == SUDOERS:
+            if isinstance(SUDOERS, (list, set)):
+                is_sudo = member.id in SUDOERS
+            else:
+                is_sudo = member.id == SUDOERS
+
+            if is_sudo:
                 msg = await message.reply_text(
                     f"⚡ <b>SUDO USER JOINED</b>\n\n{member.mention}"
                 )
