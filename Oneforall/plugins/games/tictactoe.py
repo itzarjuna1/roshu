@@ -1,40 +1,34 @@
 # tictactoe.py
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, Message
+from Oneforall import *
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from collections import defaultdict
 
-# =========================
-# Storage
-# =========================
+# ========== STORAGE ==========
 games = {}  # {chat_id: game_data}
 leaderboards = defaultdict(lambda: defaultdict(int))  # leaderboards[chat_id][user_id] = wins
-PREFIXES = ["/", ".", "!"]
 
-# =========================
-# Start Tic Tac Toe
-# =========================
-@Client.on_message(filters.command("tictac", prefixes=PREFIXES) & filters.group)
-async def start_tictactoe(client: Client, message: Message):
+# ========== START COMMAND ==========
+@Client.on_message(command("tictac") & filters.group)
+async def start_tictactoe(client, message):
     chat_id = message.chat.id
-    # Initialize game
     if chat_id in games:
-        return await message.reply_text("A Tic Tac Toe game is already running!")
+        return await message.reply("A Tic Tac Toe game is already running!")
+
     games[chat_id] = {
         "players": [],
-        "board": [""]*9,
+        "board": [""] * 9,
         "turn": 0,
         "started": False
     }
+
     keyboard = InlineKeyboardMarkup(
         [[InlineKeyboardButton("✅ Join Game", callback_data="tictac_join")]]
     )
-    await message.reply_text("🎮 Tic Tac Toe started! Click ✅ Join Game to participate (2 players required).", reply_markup=keyboard)
+    await message.reply("🎮 Tic Tac Toe started! Click ✅ Join Game to participate (2 players required).", reply_markup=keyboard)
 
-# =========================
-# Handle callbacks
-# =========================
-@Client.on_callback_query()
-async def tictactoe_callbacks(client: Client, callback_query: CallbackQuery):
+# ========== CALLBACKS ==========
+@Client.on_callback_query(filters.regex("^tictac_"))
+async def tictactoe_callbacks(client, callback_query):
     chat_id = callback_query.message.chat.id
     user = callback_query.from_user
     data = callback_query.data
@@ -44,7 +38,7 @@ async def tictactoe_callbacks(client: Client, callback_query: CallbackQuery):
 
     game = games[chat_id]
 
-    # === Join game ===
+    # --- JOIN GAME ---
     if data == "tictac_join":
         if user.id in [p.id for p in game["players"]]:
             return await callback_query.answer("You already joined!", show_alert=True)
@@ -52,7 +46,7 @@ async def tictactoe_callbacks(client: Client, callback_query: CallbackQuery):
             return await callback_query.answer("Game is full!", show_alert=True)
 
         game["players"].append(user)
-        await callback_query.answer(f"{user.mention} joined!")
+        await callback_query.answer(f"{user.first_name} joined!")
 
         if len(game["players"]) == 2:
             game["started"] = True
@@ -61,7 +55,7 @@ async def tictactoe_callbacks(client: Client, callback_query: CallbackQuery):
             await callback_query.message.edit_text(f"Tic Tac Toe waiting for players...\n1/2 joined.", reply_markup=callback_query.message.reply_markup)
         return
 
-    # === Make a move ===
+    # --- MAKE MOVE ---
     if data.startswith("tictac_move:"):
         if not game["started"]:
             return await callback_query.answer("Game hasn't started yet.", show_alert=True)
@@ -93,15 +87,12 @@ async def tictactoe_callbacks(client: Client, callback_query: CallbackQuery):
             await send_tictac_board(client, chat_id, callback_query.message)
         return
 
-# =========================
-# Render board
-# =========================
+# ========== RENDER BOARD ==========
 def render_board(board):
-    return "\n".join([" | ".join(board[i:i+3]) if board[i] != "" else "▫️ | ▫️ | ▫️" for i in range(0, 9, 3)])
+    def cell_text(i):
+        return board[i] if board[i] != "" else "▫️"
+    return "\n".join([" | ".join([cell_text(j) for j in range(i, i+3)]) for i in range(0,9,3)])
 
-# =========================
-# Send board with buttons
-# =========================
 async def send_tictac_board(client, chat_id, message):
     game = games[chat_id]
     keyboard = []
@@ -114,26 +105,9 @@ async def send_tictac_board(client, chat_id, message):
         keyboard.append(row)
     board_markup = InlineKeyboardMarkup(keyboard)
     player_turn = game["players"][game["turn"] % 2]
-    await message.edit_text(f"Tic Tac Toe - {player_turn.mention}'s turn\n\n" + render_board(game["board"]), reply_markup=board_markup)
+    await message.edit_text(f"Tic Tac Toe - {player_turn.first_name}'s turn\n\n" + render_board(game["board"]), reply_markup=board_markup)
 
-# =========================
-# Leaderboard
-# =========================
-@Client.on_message(filters.command("ticlead", prefixes=PREFIXES) & filters.group)
-async def tictac_leaderboard(client: Client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in leaderboards or not leaderboards[chat_id]:
-        return await message.reply_text("No games played yet!")
-
-    text = "🏆 Tic Tac Toe Leaderboard 🏆\n\n"
-    sorted_players = sorted(leaderboards[chat_id].items(), key=lambda x: x[1], reverse=True)
-    for idx, (user_id, wins) in enumerate(sorted_players[:10], 1):
-        text += f"{idx}. [User](tg://user?id={user_id}) - {wins} wins\n"
-    await message.reply_text(text, disable_web_page_preview=True)
-
-# =========================
-# Check winner
-# =========================
+# ========== CHECK WINNER ==========
 def check_winner(b):
     wins = [
         [0,1,2],[3,4,5],[6,7,8],
@@ -144,3 +118,16 @@ def check_winner(b):
         if b[w[0]] != "" and b[w[0]] == b[w[1]] == b[w[2]]:
             return b[w[0]]
     return None
+
+# ========== LEADERBOARD ==========
+@Client.on_message(command("ticlead") & filters.group)
+async def tictac_leaderboard(client, message):
+    chat_id = message.chat.id
+    if chat_id not in leaderboards or not leaderboards[chat_id]:
+        return await message.reply("No games played yet!")
+
+    text = "🏆 Tic Tac Toe Leaderboard 🏆\n\n"
+    sorted_players = sorted(leaderboards[chat_id].items(), key=lambda x: x[1], reverse=True)
+    for idx, (user_id, wins) in enumerate(sorted_players[:10], 1):
+        text += f"{idx}. [User](tg://user?id={user_id}) - {wins} wins\n"
+    await message.reply(text, disable_web_page_preview=True)
