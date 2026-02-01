@@ -172,7 +172,7 @@ async def play_commnd(
                 else:
                     plist_id = url.split("=")[1]
                 img = config.PLAYLIST_IMG_URL
-                
+                has_spoiler=True,
                 cap = _["play_9"]
             else:
                 try:
@@ -181,6 +181,7 @@ async def play_commnd(
                     return await mystic.edit_text(_["play_3"])
                 streamtype = "youtube"
                 img = details["thumb"]
+                has_spoiler=True,
                 cap = _["play_10"].format(
                     details["title"],
                     details["duration_min"],
@@ -198,6 +199,7 @@ async def play_commnd(
                     return await mystic.edit_text(_["play_3"])
                 streamtype = "youtube"
                 img = details["thumb"]
+                has_spoiler=True,
                 cap = _["play_10"].format(details["title"], details["duration_min"])
             elif "playlist" in url:
                 try:
@@ -236,6 +238,7 @@ async def play_commnd(
                     return await mystic.edit_text(_["play_3"])
                 streamtype = "youtube"
                 img = details["thumb"]
+                has_spoiler=True,
                 cap = _["play_10"].format(details["title"], details["duration_min"])
             elif "playlist" in url:
                 spotify = True
@@ -256,6 +259,7 @@ async def play_commnd(
                 return await mystic.edit_text(_["play_3"])
             streamtype = "youtube"
             img = details["thumb"]
+            has_spoiler=True,
             cap = _["play_10"].format(details["title"], details["duration_min"])
         elif await SoundCloud.valid(url):
             try:
@@ -557,6 +561,7 @@ async def play_playlists_command(client, CallbackQuery, _):
             result = await YouTube.playlist(
                 videoid,
                 config.PLAYLIST_FETCH_LIMIT,
+                has_spoiler=True,
                 CallbackQuery.from_user.id,
                 True,
             )
@@ -636,6 +641,7 @@ async def slider_queries(client, CallbackQuery, _):
         buttons = slider_markup(_, vidid, user_id, query, query_type, cplay, fplay)
         med = InputMediaPhoto(
             media=thumbnail,
+            has_spoiler=True,
             caption=_["play_10"].format(
                 title.title(),
                 duration_min,
